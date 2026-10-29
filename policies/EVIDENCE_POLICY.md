@@ -107,3 +107,18 @@ Ask:
 - Am I converting naming conventions into facts?
 
 If the claim weakens under challenge, rewrite it.
+
+## Rule 16 — Absence Claims Are Scoped Findings, Not Facts
+A search that finds nothing proves only that the search found nothing. Absence can be hidden by dynamic imports, reflection, string-built names, generated code, external configuration, other repositories, or files outside the inspected scope.
+
+For any claim that something is absent, unused, never called, or unenforced:
+- Word it as a finding: "No use of S3 or DynamoDB clients was found in `backend/`", not "The app does not use S3."
+- Begin the ledger Caveat with `Search scope:` and state what was searched (paths, patterns, file types) and how (full read, grep, both).
+- Evidence strength is at most CORROBORATED; an absence is never DIRECT.
+- Name the plausible ways the search could have missed it when they are realistic.
+
+Bad:
+> No authentication exists.
+
+Better:
+> No authentication or authorization was found on the FastAPI routes in `backend/app/main.py`; an upstream gateway outside the repository could still provide it.

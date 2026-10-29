@@ -90,6 +90,8 @@ Write from the claims ledger, not from memory.
 
 The report prose is a presentation of verified claims—not a fresh generation step that adds new facts.
 
+Write the Architect Brief last, from the finished ledger, and place it first. Then write section 17: the claims you would double-check before saying them aloud in an architecture meeting.
+
 ## Phase 10 — Self-Audit
 Before completion:
 - ensure every material statement maps to a claim;
@@ -97,6 +99,7 @@ Before completion:
 - ensure evidence supports wording strength;
 - downgrade unsupported certainty;
 - move unresolved conclusions to UNKNOWN;
+- reword absence claims as scoped findings with a `Search scope:` caveat;
 - ensure contradictions are visible.
 
 ## Information-Value Rule

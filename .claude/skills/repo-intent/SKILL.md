@@ -45,8 +45,8 @@ Target: $ARGUMENTS
 7. Check contradictions across docs/config/tests/code.
 8. Re-verify high-impact claims.
 9. Build claims ledger.
-10. Generate report from ledger.
-11. Self-audit for unsupported wording.
+10. Generate report from ledger: forensic sections 1–16, then the one-page **Architect Brief** placed above section 1, then section 17 **"What I would verify before repeating this in an architecture meeting."**
+11. Self-audit for unsupported wording, especially absence claims (Evidence Policy Rule 16: "no … found in <scope>", Caveat starts `Search scope:`).
 12. Run `python3 tools/check_citations.py reports/<name>/REPORT.md --repo <target>`. Fix every ERROR and re-run until it passes. Report the final checker summary line to the human.
 
 ## Evidence Citations
@@ -80,6 +80,7 @@ Do not use numeric confidence percentages unless a measured calibration system e
 - Do not infer production topology from IaC/deployment files alone.
 - Do not invent business meaning from names when the repo does not establish it.
 - Do not hide uncertainty.
+- Do not state absence as fact. "Not found in <scope>" is the strongest absence claim the repository can support.
 - Do not ask the user questions that the repository itself can answer.
 - Ask a human only when a decision materially depends on unavailable external context and cannot be safely labeled UNKNOWN.
 

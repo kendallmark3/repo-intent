@@ -76,6 +76,8 @@ For each repo, manually audit at least:
 - 5 ordinary observed claims;
 - 3 inferred claims;
 - all contradictions reported;
+- all absence claims (check the `Search scope:` matches what was actually searched);
+- every item in the Architect Brief and in "What I would verify before repeating";
 - all HIGH confidence security/auth/deployment claims.
 
 ## Failure Log

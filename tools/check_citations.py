@@ -30,13 +30,26 @@ from pathlib import Path
 CITATION_RE = re.compile(
     r"`(?P<path>[^`\s:#]+)"
     r"(?::L(?P<start>\d+)(?:-L(?P<end>\d+))?)?"
-    r"(?:#(?P<symbol>[^`\s]+))?`"
+    r"(?:#(?P<symbol>[^`]+))?`"
 )
 CLAIM_ID_RE = re.compile(r"\bC-\d{3,}\b")
 CLASSES = {"OBSERVED", "INFERRED", "UNKNOWN", "CONTRADICTED"}
 STRENGTHS = {"DIRECT", "CORROBORATED", "INDIRECT", "INSUFFICIENT"}
 CONFIDENCES = {"HIGH", "MEDIUM", "LOW"}
 VERIFICATIONS = {"VERIFIED", "QUALIFIED", "FAILED"}
+ABSENCE_RE = re.compile(
+    r"\b(no|never|none|nothing|unused|absent|lacks?|without)\b"
+    r"|\b(?:not|never)\s+(?:used|loaded|enforced|present|called|invoked|implemented|applied"
+    r"|referenced|read|imported|exercised|wired)\b"
+    r"|\bdoes(?:n't| not)\b",
+    re.I,
+)
+FOUND_RE = re.compile(r"\b(found|observed|seen)\b", re.I)
+BRIEF_RE = re.compile(r"^##\s+Architect Brief\b", re.I | re.M)
+SECTION1_RE = re.compile(r"^##\s+1\.\s", re.M)
+VERIFY_RE = re.compile(r"^##\s+(?:\d+\.\s+)?.*verify before repeating", re.I | re.M)
+LEDGER_HEADING_RE = re.compile(r"^##\s+(?:\d+\.\s+)?Claims Ledger", re.I | re.M)
+BRIEF_MAX_WORDS = 400
 PERCENT_RE = re.compile(r"\b\d{1,3}(?:\.\d+)?\s?%\s*(?:confiden|certain|sure|likely)", re.I)
 
 
@@ -57,18 +70,22 @@ class Result:
     claims: int = 0
 
 
-def parse_citations(text: str) -> list[Citation]:
+def parse_citations(text: str, strict: bool = False) -> list[Citation]:
+    """Extract citations from text.
+
+    strict=True (ledger Evidence column): every backticked token is a citation and must resolve.
+    strict=False (report prose): only tokens with a `:L` or `#` locator are treated as citations,
+    so ordinary inline code such as `/api/health` or `0.2.0` is not mistaken for evidence.
+    """
     out = []
     for m in CITATION_RE.finditer(text):
-        path = m.group("path")
-        # Only treat it as a citation if it looks like a path (has a slash or a dot extension)
-        # or carries a line/symbol locator. Avoids flagging inline code like `UNKNOWN`.
         has_locator = m.group("start") or m.group("symbol")
-        if not ("/" in path or "." in path or has_locator):
+        if not strict and not has_locator:
             continue
         start = int(m.group("start")) if m.group("start") else None
         end = int(m.group("end")) if m.group("end") else start
-        out.append(Citation(m.group(0), path, start, end, m.group("symbol")))
+        symbol = m.group("symbol").strip() if m.group("symbol") else None
+        out.append(Citation(m.group(0), m.group("path"), start, end, symbol))
     return out
 
 
@@ -126,14 +143,65 @@ def parse_ledger(text: str) -> tuple[list[dict], list[str]]:
     return rows, problems
 
 
+def _section(text: str, heading: re.Match) -> str:
+    """Body of the section starting at `heading`, up to the next level-2 heading."""
+    rest = text[heading.end():]
+    nxt = re.search(r"^##\s", rest, re.M)
+    return rest[: nxt.start()] if nxt else rest
+
+
+def check_structure(text: str, res: Result) -> None:
+    brief = BRIEF_RE.search(text)
+    sec1 = SECTION1_RE.search(text)
+    if not brief:
+        res.errors.append("structure: missing '## Architect Brief' section")
+    else:
+        if sec1 and brief.start() > sec1.start():
+            res.errors.append("structure: Architect Brief must appear above section 1")
+        body = _section(text, brief)
+        words = len(re.findall(r"\S+", re.sub(r"<!--.*?-->", "", body, flags=re.S)))
+        if words > BRIEF_MAX_WORDS:
+            res.errors.append(f"structure: Architect Brief is {words} words (max {BRIEF_MAX_WORDS})")
+        if not CLAIM_ID_RE.search(body):
+            res.errors.append("structure: Architect Brief cites no claim IDs")
+    verify = VERIFY_RE.search(text)
+    if not verify:
+        res.errors.append("structure: missing final section 'What I would verify before repeating "
+                          "this in an architecture meeting'")
+    else:
+        ledger = LEDGER_HEADING_RE.search(text)
+        if ledger and verify.start() < ledger.start():
+            res.errors.append("structure: verify-before-repeating section must come after the claims ledger")
+        if not CLAIM_ID_RE.search(_section(text, verify)):
+            res.errors.append("structure: verify-before-repeating section cites no claim IDs")
+
+
+def check_absence(cid: str, row: dict, cls: str, res: Result) -> None:
+    """Evidence Policy Rule 16: absence claims are scoped findings, not facts."""
+    if cls not in {"OBSERVED", "INFERRED", "CONTRADICTED"}:
+        return
+    claim = row.get("claim", "")
+    if not ABSENCE_RE.search(claim):
+        return
+    if not FOUND_RE.search(claim):
+        res.errors.append(f"{cid}: absence claim must be worded as a finding "
+                          f"('no ... found' / 'not observed'), Rule 16")
+    if not row.get("caveat", "").strip().lower().startswith("search scope:"):
+        res.errors.append(f"{cid}: absence claim caveat must begin 'Search scope:', Rule 16")
+    if row.get("strength", "").strip("*` ").upper() == "DIRECT":
+        res.errors.append(f"{cid}: absence claim cannot have DIRECT strength, Rule 16")
+
+
 def check_report(report: Path, repo: Path) -> Result:
     res = Result()
     text = report.read_text(encoding="utf-8")
 
+    check_structure(text, res)
     rows, problems = parse_ledger(text)
     res.errors.extend(problems)
     res.claims = len(rows)
     ledger_ids = set()
+    ledger_citations: list[Citation] = []
     for row in rows:
         cid = row.get("id", "")
         if not CLAIM_ID_RE.fullmatch(cid):
@@ -148,7 +216,9 @@ def check_report(report: Path, repo: Path) -> Result:
             if val not in allowed:
                 res.errors.append(f"{cid}: {col} '{row.get(col, '')}' not one of {sorted(allowed)}")
         cls = row.get("class", "").strip("*` ").upper()
-        cites = parse_citations(row.get("evidence", ""))
+        check_absence(cid, row, cls, res)
+        cites = parse_citations(row.get("evidence", ""), strict=True)
+        ledger_citations.extend(cites)
         if cls in {"OBSERVED", "INFERRED", "CONTRADICTED"} and not cites:
             res.errors.append(f"{cid}: {cls} claim has no evidence citation")
         if row.get("verification", "").strip("*` ").upper() == "FAILED" and cls != "UNKNOWN":
@@ -161,7 +231,9 @@ def check_report(report: Path, repo: Path) -> Result:
     if rows and unused and len(unused) == len(ledger_ids):
         res.warnings.append("no ledger claim IDs are referenced from the report body")
 
-    for c in parse_citations(text):
+    ledger_raw = {c.raw for c in ledger_citations}
+    prose = [c for c in parse_citations(text) if c.raw not in ledger_raw]
+    for c in ledger_citations + prose:
         res.citations_checked += 1
         err = check_citation(c, repo)
         if err:
