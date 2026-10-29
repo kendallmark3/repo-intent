@@ -32,6 +32,18 @@ Given a local repo or cloned public GitHub repository, produce a compact **Repos
 9. Where do documentation, tests, code, and configuration disagree?
 10. What important things cannot be known from this repository alone?
 
+## Prerequisites
+
+RepoIntent is built on Intent-Driven Engineering and expects the **[intent-drive-starter](https://github.com/kendallmark3/intent-drive-starter)** Claude Code plugin. This repo ships the RepoIntent-specific pieces (skill, policy, contract, checker, evals) plus the starter's intent/context/templates scaffold — it does **not** bundle the starter's plugin skills, agents, or hooks. Install the starter once:
+
+```bash
+claude plugin marketplace add kendallmark3/intent-drive-starter && claude plugin install intent-drive-starter@intent-drive-starter
+```
+
+That gives you `/intent-drive-starter:start`, the feature-planner and progressive-intent skills, the planner/developer/qa/reviewer agents, and the pre-implement edit gate. See the starter's [install guide](https://github.com/kendallmark3/intent-drive-starter/blob/main/install-plugin.md).
+
+Also required: `git`, `bash`, Python 3.9+ (standard library only), and Claude Code.
+
 ## Quick Start
 
 ```bash

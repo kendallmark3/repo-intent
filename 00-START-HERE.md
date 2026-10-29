@@ -14,6 +14,7 @@ What is **not** done: running it against real repositories and proving the claim
 ## Sequence
 
 ### 1. Clone and open
+Prerequisite: the intent-drive-starter plugin is installed (see README → Prerequisites).
 ```bash
 git clone https://github.com/kendallmark3/repo-intent.git && cd repo-intent
 python3 -m unittest discover -s tests && bash hooks/pre-implement.sh
