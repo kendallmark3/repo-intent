@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.pyc
+# Cloned target repositories under analysis. Never commit them.
+targets/*
+!targets/.gitkeep
