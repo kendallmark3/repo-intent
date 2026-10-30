@@ -8,7 +8,10 @@ Categories: unsupported claim · overstatement · missed component · false comp
 |---|---|---|---|---|---|
 | 2026-10-29 | clinical-evidence-coordinator | broken evidence citation (checker) | C-022, C-032 | Checker silently skipped citations whose `#symbol` contained a space, so some evidence was never verified; it also flagged prose inline code (`/ping`, `0.2.0`) as missing files. Fixed: strict parsing in the ledger, locator-only parsing in prose, spaces allowed in symbols. | H |
 | 2026-10-29 | clinical-evidence-coordinator | overstatement | C-012, C-014, C-016, C-017, C-020, C-021, C-027, C-028, C-029 | Absence was stated as fact ("never calls", "no authentication", "unused") when only a scoped static search supported it. Fixed by Evidence Policy Rule 16 + checker enforcement on ledger rows; prose was swept by hand. | M |
+| 2026-10-29 | multi-agent-supply-chain-system | overstatement (prose) | C-011, C-023, C-029, C-030 | Ledger rows passed Rule 16, but six body sentences still stated absence as fact ("starts only", "which no Python file reads"). Caught by a manual sweep, not the checker. | M |
+| 2026-10-29 | multi-agent-supply-chain-system | checker false positive | C-005, C-020 | Rule 16 regex fired on "no-match" and on "without" inside a quoted README phrase. Worked around by rewording. | L |
 
 ## Pattern summary
 <!-- Update after each run: which categories repeat, across which repo shapes. -->
 - Run 1: the checker enforces Rule 16 on ledger rows only. If unscoped absence keeps appearing in prose on repo #2, that is a candidate for Intent 002.
+- Run 2: **confirmed, repeated.** Unscoped absence appeared in prose again (6 sentences). This is now the leading Intent 002 candidate: a prose-level Rule 16 check with a low false-positive rate. Its regex also needs to skip hyphenated words and quoted text.
