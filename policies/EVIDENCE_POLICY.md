@@ -122,3 +122,15 @@ Bad:
 
 Better:
 > No authentication or authorization was found on the FastAPI routes in `backend/app/main.py`; an upstream gateway outside the repository could still provide it.
+
+## Rule 17 — Objective, Neutral Language
+The report is a map of current state, not a critique. Its readers include the people who built the system.
+
+- Describe state, not merit: "no authentication was found on the API routes", not "the API is insecure".
+- State conditions, not faults: "attention areas", not "problems" or "failures" (literal technical terms like "fails closed" are fine).
+- Balance: report evidenced strengths with the same rigor as attention areas. Both need claims and evidence.
+- Do not judge capabilities beyond the repository's own intent. Out of scope is not a defect (see the Radius position in the report contract).
+- No loaded adjectives (broken, sloppy, naive, hacky, messy, toy, flawed, poor, …), no sarcasm, no "just"/"merely"/"only a demo" minimizers, and no guesses about authors' motives or competence.
+- Severity is expressed through evidence and impact ("concurrent runs would overwrite audit artifacts"), not through adjectives.
+
+`tools/check_citations.py` rejects a list of loaded terms outside code spans. Passing that list is necessary, not sufficient.

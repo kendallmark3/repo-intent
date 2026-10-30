@@ -90,7 +90,12 @@ Write from the claims ledger, not from memory.
 
 The report prose is a presentation of verified claims—not a fresh generation step that adds new facts.
 
-Write the Architect Brief last, from the finished ledger, and place it first. Then write section 17: the claims you would double-check before saying them aloud in an architecture meeting.
+Write the upper altitudes last, from the finished ledger, and place them first:
+1. Forensic Detail, then section 17 (what you would verify before repeating it in an architecture meeting).
+2. Architect Brief, including the five-radius position: where the evidence says the system has credibly reached, and where its own intent says it stops.
+3. Management Summary in plain language.
+
+Orientation before direction: the report establishes where the system is today. Where it should go is the owners' next intent, informed by this report.
 
 ## Phase 10 — Self-Audit
 Before completion:
@@ -100,6 +105,7 @@ Before completion:
 - downgrade unsupported certainty;
 - move unresolved conclusions to UNKNOWN;
 - reword absence claims as scoped findings with a `Search scope:` caveat;
+- reread every sentence for neutral, objective tone (Rule 17), and confirm strengths are reported alongside attention areas;
 - ensure contradictions are visible.
 
 ## Information-Value Rule

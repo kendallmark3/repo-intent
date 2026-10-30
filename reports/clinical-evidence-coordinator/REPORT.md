@@ -1,23 +1,42 @@
 # Repository Intelligence Report — Clinical-Evidence-Coordinator
 
+## Management Summary
+
+- **Where it is today:** A working reference prototype that checks whether a synthetic clinical-study evidence package is complete enough for a human reviewer. It runs locally with automated tests; cloud deployment and the AI model path are set up but not yet exercised [C-001, C-034, C-023, C-025].
+- **Current credible radius:** Radius 2 of 5 (Prototype & Proof), with parts of Radius 3 in place [C-005, C-021].
+- **What's working:** Rules, not the AI, make the final call, and a person always reviews [C-008, C-030]. Cloud-specific code is kept apart from business logic [C-021]. Tests cover the main scenarios [C-034].
+- **Attention areas:** No sign-in was found on the API [C-027]. Records from simultaneous runs can overwrite each other [C-015].
+- **Questions to settle before setting direction:** Is this a teaching reference or a path to production [C-035]? Who owns the AWS account and model access [C-024, C-025]?
+
 ## Architect Brief
 
-- **What it is:** a starter/teaching repo that checks whether a *synthetic* clinical-study evidence package is ready for a human reviewer. It makes no clinical or regulatory decisions [C-001, C-030].
+- **What it is:** a reference implementation that checks whether a *synthetic* clinical-study evidence package is ready for a human reviewer; it makes no clinical or regulatory decisions [C-001, C-030, C-035].
 - **Shape:** one Python/FastAPI service with two entry points: a local API with an upload page, and an Amazon Bedrock AgentCore runtime entry. AWS code is kept at the edges [C-002, C-003, C-021].
 - **Where the intelligence is:** one model-backed step, Document Intake, which proposes requirement matches for uploaded PDFs. The other four "agents" and the final verdict are deterministic rules, and model output fails closed [C-006, C-007, C-008, C-009].
-- **What's real vs aspirational:**
-  - *Real:* the local pipeline, fail-closed rules, the keyword mock, CI, and 18 tests [C-005, C-032, C-022, C-034].
-  - *Aspirational:* Bedrock (never run), AgentCore deployment (dry-run only), and S3/DynamoDB (provisioned, no code use found) [C-025, C-023, C-016].
+- **Implemented vs planned:**
+  - *Implemented:* the local pipeline, fail-closed rules, the keyword mock, CI, and 18 tests [C-005, C-032, C-022, C-034].
+  - *Planned or configured, no implementation found:* a Bedrock run, AgentCore deployment (dry-run only), S3/DynamoDB use, and App Runner (listed in the intent, not in the Terraform) [C-025, C-023, C-016, C-036].
   - *Descriptive only:* the YAML agent/workflow configs [C-017].
-  - On AgentCore, no model call was found at all [C-012].
-- **Top risks:**
+  - On AgentCore, no model call was found [C-012].
+- **Radius position:**
+
+  | Radius | Status | Basis |
+  |---|---|---|
+  | 1 Intent & Discovery | EVIDENCED | Written intent, success criteria, non-goals [C-035, C-001] |
+  | 2 Prototype & Proof | PARTIAL | Working pipeline and tests [C-005, C-034]; model path not yet run [C-025] |
+  | 3 Engineering & Integration | PARTIAL | Clean adapter boundary [C-021, C-003]; state/artifact interfaces and configs not wired [C-016, C-017] |
+  | 4 Delivery & Production | NOT YET EVIDENCED | CI and deploy dry-run [C-022, C-023]; deployment unknown [C-024]; no API auth found [C-027] |
+  | 5 Enterprise Operation & Governance | OUT OF SCOPE | Repo defines itself as a reference implementation with clinical/regulatory non-goals [C-035] |
+
+- **Attention areas:**
   1. No authentication found on the API [C-027].
   2. Prompt-injection surface; no check of model claims against the source was found [C-029].
   3. Concurrent runs overwrite each other's audit artifacts [C-015].
 - **Biggest unknowns:**
   1. Whether the Bedrock path and its default model ID work [C-025].
   2. Whether anything is deployed [C-024].
-  3. Model classification accuracy, since no evaluation set was found [C-029].
+  3. Model classification accuracy; no evaluation set was found [C-029].
+- **Smallest next step outward (option for the owners):** complete Radius 2 with one recorded `PROVIDER_MODE=bedrock` run over the three sample scenarios plus a small labeled evaluation set. Proof: scenario verdicts match the README's expected results and classification accuracy is recorded [C-025, C-029].
 
 ## 1. Repository Identity
 - **Repository:** https://github.com/kendallmark3/Clinical-Evidence-Coordinator
@@ -43,7 +62,7 @@
 ## 4. System Purpose
 - **Documented:** reviews synthetic clinical-study evidence packages for structural completeness, consistency, and traceability [C-001].
 - **Implemented:** every run ends in exactly one of `READY_FOR_HUMAN_REVIEW` / `NOT_READY_FOR_HUMAN_REVIEW`, and human review is always required [C-008, C-030].
-- **Inferred:** a teaching/reference repo for agent architecture on AWS AgentCore, not a production clinical system. Its README calls itself "a working starter repo for learning" and declares synthetic data only [C-028].
+- **Documented intent:** a reference implementation for multi-agent orchestration, not a medical decision system, with explicit non-goals [C-035]. The README calls itself a starter repo for learning, and the manifest declares synthetic data only [C-028].
 - **Unknowns:** real-world users and deployment [C-024].
 
 ## 5. Entry Points & Execution Paths
@@ -74,7 +93,7 @@
 - **Transformations:** see flows A/B above.
 - **Persistence:** `ArtifactStore` writes JSON files with fixed names into `ARTIFACT_DIR`. No database client use was found in application code [C-014]. Concurrent runs would overwrite each other's artifacts; the repo's own analysis doc acknowledges this [C-015].
 - **Outputs:** a `ReviewResponse` with status, missing requirement IDs, blocking findings, and all intermediate artifacts inline [C-008].
-- **Gap:** S3/DynamoDB exist only in Terraform [C-016].
+- **Provisioned, not wired:** S3 and DynamoDB appear in Terraform; no application use was found [C-016].
 
 ## 8. External Integrations
 | Integration | Evidence | Usage |
@@ -108,13 +127,14 @@
 ## 12. Domain / Business Concepts
 Directly named in code: study package, protocol requirement (`evidence_required`), evidence item (`complete` / `incomplete` / `missing`), readiness status, blocking finding, human review [C-031, C-030]. Requirement content (e.g. adverse-event reconciliation) comes from sample data, not code.
 
-## 13. Contradictions / Drift
+## 13. Alignment Gaps (Contradictions / Drift)
 - **Acknowledged drift:** `config/agents.yaml`, `config/workflow.yaml`, `agent-manifest.yaml`, and four of five prompt files describe the design, but no code loading them was found. The repo's own CLAUDE.md and AI_ANALYSIS.md say so [C-017].
 - `agent-manifest.yaml` lists four workers and omits `document_intake`, which `config/agents.yaml` defines [C-018].
 - Version labels disagree: API `0.2.0` vs package `0.1.0` vs manifest/workflow `"0.1"` [C-019].
 - Two overlapping model-provider abstractions exist; no use of the platform one was found [C-020].
 - `PROVIDER_MODE` is set in `agentcore.json`, but no provider use was found on the AgentCore path [C-013].
-- README line 5 headlines "AgentCore Runtime → Bedrock" while its own status table says Bedrock has not run and AgentCore does not take documents. The README qualifies itself; treat the headline as aspiration [C-024, C-025].
+- README line 5 headlines "AgentCore Runtime → Bedrock" while its own status table says Bedrock has not run and AgentCore does not take documents. The README qualifies itself; read the headline as the planned path [C-024, C-025].
+- The intent's engineering criteria list App Runner in the Terraform starter; the Terraform omits it, with a comment explaining why [C-036].
 
 ## 14. Important Unknowns
 | Unknown | Why the repo can't establish it | What would resolve it |
@@ -133,7 +153,7 @@ Directly named in code: study package, protocol requirement (`evidence_required`
 | C-004 | The API exposes five routes: `/`, `/api/health`, `/api/config/status`, `POST /api/review`, `POST /api/review/documents` | OBSERVED | DIRECT | HIGH | `backend/app/main.py:L24-L46#/api/review` | VERIFIED | — |
 | C-005 | `Orchestrator.run` is a fixed five-step Python sequence with explicit `WorkflowState` | OBSERVED | DIRECT | HIGH | `backend/app/orchestration/orchestrator.py:L41-L84#current_step`; `backend/app/orchestration/state_manager.py:L5-L16#WorkflowState` | VERIFIED | — |
 | C-006 | Only `DocumentIntakeAgent` calls a model provider; the Requirements, Evidence, Quality, and Review agents are deterministic Python | OBSERVED | CORROBORATED | HIGH | `backend/app/agents/document_intake_agent.py:L61#generate`; `backend/app/agents/requirements_agent.py:L6-L18#run`; `backend/app/agents/evidence_agent.py:L6-L25#run`; `backend/app/agents/quality_agent.py:L7-L39#run`; `backend/app/agents/review_agent.py:L6-L26#run`; `README.md:L20#no LLM` | VERIFIED | Absence of provider calls in the four agents confirmed by full read + grep |
-| C-007 | Model output is shape-checked; any provider error, non-JSON reply, bad IDs, or bad status fails closed to an empty requirement list with status incomplete | OBSERVED | CORROBORATED | HIGH | `backend/app/agents/document_intake_agent.py:L60-L97#_fail_closed`; `backend/tests/test_document_intake.py:L71#test_bad_model_output_fails_closed` | VERIFIED | — |
+| C-007 | Model output is shape-checked; any provider error, non-JSON reply, invalid IDs, or invalid status fails closed to an empty requirement list with status incomplete | OBSERVED | CORROBORATED | HIGH | `backend/app/agents/document_intake_agent.py:L60-L97#_fail_closed`; `backend/tests/test_document_intake.py:L71#test_bad_model_output_fails_closed` | VERIFIED | — |
 | C-008 | Final readiness is decided by the deterministic validator: every required requirement needs complete evidence and the blocking-findings list must be empty | OBSERVED | DIRECT | HIGH | `backend/app/validation/validator.py:L1-L27#ready`; `backend/app/orchestration/orchestrator.py:L77-L82#validate` | VERIFIED | — |
 | C-009 | A model that invents requirement IDs cannot make a package ready; unknown IDs become blocking findings | OBSERVED | CORROBORATED | HIGH | `backend/app/agents/quality_agent.py:L21-L26#unknown requirement`; `backend/tests/test_document_intake.py:L77#test_model_cannot_invent_requirements` | VERIFIED | `_parse` itself accepts any string IDs; the block happens downstream |
 | C-010 | The provider is selected by the `PROVIDER_MODE` env var and defaults to `mock` | OBSERVED | CORROBORATED | HIGH | `backend/app/config.py:L6#PROVIDER_MODE`; `backend/app/providers/factory.py:L6-L12#mock` | VERIFIED | — |
@@ -161,6 +181,8 @@ Directly named in code: study package, protocol requirement (`evidence_required`
 | C-032 | The mock provider is keyword matching, explicitly "not AI", marking documents incomplete on draft/pending/partial | OBSERVED | DIRECT | HIGH | `backend/app/providers/mock_provider.py:L11-L21#Not AI` | VERIFIED | — |
 | C-033 | The CDK stack is AgentCore-CLI-generated; its MCP and payment constructs are conditional and current config enables neither | INFERRED | CORROBORATED | HIGH | `agentcore/agentcore.json:L7#agentcore-cli`; `agentcore/agentcore.json:L36#agentCoreGateways`; `agentcore/agentcore.json:L43#payments`; `agentcore/cdk/lib/cdk-stack.ts:L128-L130#agentCoreGateways`; `agentcore/cdk/lib/cdk-stack.ts:L139-L141#paymentSpec` | VERIFIED | Payment IAM grants exist in generated code but are not activated |
 | C-034 | 18 pytest test functions across 4 files cover the workflow, fail-closed intake, local-vs-AgentCore adapter parity, and the AgentCore HTTP entry point | OBSERVED | DIRECT | HIGH | `backend/tests/test_runtime_adapters.py:L11#test_local_and_agentcore_adapters_preserve_domain_result`; `backend/tests/test_workflow.py:L10-L30#def test`; `backend/tests/test_agentcore_entrypoint.py:L20-L33#def test`; `backend/tests/test_document_intake.py:L43-L102#def test` | VERIFIED | Counted from `def test` lines; parametrized cases not expanded; tests not executed |
+| C-035 | The repo's own intent defines it as a reference implementation for multi-agent orchestration, not a medical decision system, and lists non-goals including PHI, production clinical data, and regulatory decisions | OBSERVED | DIRECT | HIGH | `intents/Feature.md:L7#reference implementation`; `intents/Feature.md:L169-L179#Non-Goals` | VERIFIED | Documented intent; the Radius 5 OUT OF SCOPE status rests on it |
+| C-036 | The intent's engineering criteria say the Terraform starter supports App Runner; the Terraform omits App Runner, with a comment explaining the choice | CONTRADICTED | DIRECT | HIGH | `intents/Feature.md:L166#App Runner`; `infrastructure/terraform/main.tf:L48-L50#App Runner is intentionally omitted` | VERIFIED | Explained in a comment; documentation drift, not hidden |
 
 ## 16. Next Inspection Targets
 | Target | Uncertainty it resolves | Value |
@@ -172,7 +194,7 @@ Directly named in code: study package, protocol requirement (`evidence_required`
 
 ## 17. What I would verify before repeating this in an architecture meeting
 
-| Statement as I'd say it | Claims | Why it could be wrong | Cheapest check |
+| Statement as I'd say it | Claims | What could change it | Cheapest check |
 |---|---|---|---|
 | "Only one step uses an LLM; everything else is rules." | C-006, C-012 | Static read only; a provider could be reached through a path I didn't trace | `grep -rn "generate(" backend agentcore_app.py` plus a breakpoint run of both entry points |
 | "The AgentCore deployment doesn't call a model." | C-012, C-013 | Absence claim; the deployed code could differ from this SHA | Confirm the deployed artifact's commit, then invoke `/invocations` with model logging on |

@@ -66,6 +66,8 @@ python3 tools/check_citations.py reports/<repo>/REPORT.md --repo targets/<repo>
 
 Then challenge it by hand: *"Show me the evidence for C-003."*
 
+Every report reads at three altitudes: **Management Summary** (plain language, ≤150 words), then the **Architect Brief** (≤400 words, including where the system sits on the five-radius model), then the **Forensic Detail** with the claims ledger. It ends with *what I would verify before repeating this in an architecture meeting*. The tone is objective: it maps where the system is today and leaves where it should go to the owners. See [`contracts/REPORT_CONTRACT.md`](contracts/REPORT_CONTRACT.md).
+
 ## V1 Is Local-First
 
 Do **not** start with AWS.

@@ -45,7 +45,20 @@ ABSENCE_RE = re.compile(
     re.I,
 )
 FOUND_RE = re.compile(r"\b(found|observed|seen)\b", re.I)
-BRIEF_RE = re.compile(r"^##\s+Architect Brief\b", re.I | re.M)
+MGMT_RE = re.compile(r"^##\s+(?:Level 1\s*[—–-]\s*)?Management Summary\b", re.I | re.M)
+BRIEF_RE = re.compile(r"^##\s+(?:Level 2\s*[—–-]\s*)?Architect Brief\b", re.I | re.M)
+MGMT_MAX_WORDS = 150
+MGMT_FIELDS = ("where it is today", "current credible radius", "working", "attention areas",
+               "before setting direction")
+BRIEF_FIELDS = ("radius position", "attention areas", "smallest next step")
+RADIUS_ROW_RE = re.compile(r"^\s*\|\s*(?:radius\s*)?([1-5])\b[^|]*\|\s*([^|]*?)\s*\|", re.I | re.M)
+RADIUS_STATUSES = {"EVIDENCED", "PARTIAL", "NOT YET EVIDENCED", "OUT OF SCOPE", "UNKNOWN"}
+LOADED_TERMS_RE = re.compile(
+    r"\b(broken|sloppy|naive|naïve|hacky|hack|messy|mess|toy|flawed|poor|poorly|terrible|awful|"
+    r"garbage|junk|lazy|careless|amateur|amateurish|shoddy|useless|pointless|half-baked|"
+    r"unfortunately|worrying|alarming|embarrassing|ugly|crappy|stupid|dumb|merely|only a demo)\b",
+    re.I,
+)
 SECTION1_RE = re.compile(r"^##\s+1\.\s", re.M)
 VERIFY_RE = re.compile(r"^##\s+(?:\d+\.\s+)?.*verify before repeating", re.I | re.M)
 LEDGER_HEADING_RE = re.compile(r"^##\s+(?:\d+\.\s+)?Claims Ledger", re.I | re.M)
@@ -150,20 +163,52 @@ def _section(text: str, heading: re.Match) -> str:
     return rest[: nxt.start()] if nxt else rest
 
 
+def _words(body: str) -> int:
+    return len(re.findall(r"\S+", re.sub(r"<!--.*?-->", "", body, flags=re.S)))
+
+
 def check_structure(text: str, res: Result) -> None:
+    mgmt = MGMT_RE.search(text)
     brief = BRIEF_RE.search(text)
     sec1 = SECTION1_RE.search(text)
+    if not mgmt:
+        res.errors.append("structure: missing '## Management Summary' (Level 1)")
+    else:
+        if brief and mgmt.start() > brief.start():
+            res.errors.append("structure: Management Summary must appear above the Architect Brief")
+        body = _section(text, mgmt)
+        if _words(body) > MGMT_MAX_WORDS:
+            res.errors.append(f"structure: Management Summary is {_words(body)} words (max {MGMT_MAX_WORDS})")
+        if "`" in body:
+            res.errors.append("structure: Management Summary must be plain language (no code or file paths)")
+        if not CLAIM_ID_RE.search(body):
+            res.errors.append("structure: Management Summary cites no claim IDs")
+        low = body.lower().replace("’", "'")
+        for field_name in MGMT_FIELDS:
+            if field_name not in low:
+                res.errors.append(f"structure: Management Summary missing field '{field_name}'")
     if not brief:
         res.errors.append("structure: missing '## Architect Brief' section")
     else:
         if sec1 and brief.start() > sec1.start():
             res.errors.append("structure: Architect Brief must appear above section 1")
         body = _section(text, brief)
-        words = len(re.findall(r"\S+", re.sub(r"<!--.*?-->", "", body, flags=re.S)))
-        if words > BRIEF_MAX_WORDS:
-            res.errors.append(f"structure: Architect Brief is {words} words (max {BRIEF_MAX_WORDS})")
+        if _words(body) > BRIEF_MAX_WORDS:
+            res.errors.append(f"structure: Architect Brief is {_words(body)} words (max {BRIEF_MAX_WORDS})")
         if not CLAIM_ID_RE.search(body):
             res.errors.append("structure: Architect Brief cites no claim IDs")
+        low = body.lower()
+        for field_name in BRIEF_FIELDS:
+            if field_name not in low:
+                res.errors.append(f"structure: Architect Brief missing field '{field_name}'")
+        radii = {}
+        for m in RADIUS_ROW_RE.finditer(body):
+            radii[int(m.group(1))] = m.group(2).strip("*` ").upper()
+        for n in range(1, 6):
+            if n not in radii:
+                res.errors.append(f"structure: Radius position table missing Radius {n}")
+            elif radii[n] not in RADIUS_STATUSES:
+                res.errors.append(f"structure: Radius {n} status '{radii[n]}' not one of {sorted(RADIUS_STATUSES)}")
     verify = VERIFY_RE.search(text)
     if not verify:
         res.errors.append("structure: missing final section 'What I would verify before repeating "
@@ -174,6 +219,14 @@ def check_structure(text: str, res: Result) -> None:
             res.errors.append("structure: verify-before-repeating section must come after the claims ledger")
         if not CLAIM_ID_RE.search(_section(text, verify)):
             res.errors.append("structure: verify-before-repeating section cites no claim IDs")
+
+
+def check_tone(text: str, res: Result) -> None:
+    """Evidence Policy Rule 17: objective, neutral language outside code spans."""
+    prose = re.sub(r"`[^`]*`", "", text)
+    for lineno, line in enumerate(prose.splitlines(), start=1):
+        for m in LOADED_TERMS_RE.finditer(line):
+            res.errors.append(f"tone: line {lineno}: loaded term '{m.group(0)}' (Rule 17)")
 
 
 def check_absence(cid: str, row: dict, cls: str, res: Result) -> None:
@@ -197,6 +250,7 @@ def check_report(report: Path, repo: Path) -> Result:
     text = report.read_text(encoding="utf-8")
 
     check_structure(text, res)
+    check_tone(text, res)
     rows, problems = parse_ledger(text)
     res.errors.extend(problems)
     res.claims = len(rows)

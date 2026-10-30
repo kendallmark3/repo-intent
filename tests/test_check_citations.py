@@ -8,7 +8,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
 import check_citations as cc  # noqa: E402
 
-BRIEF = "## Architect Brief\n- A demo service [C-001].\n\n## 1. Repository Identity\n"
+MGMT = (
+    "## Management Summary\n- Where it is today: a demo [C-001].\n- Current credible radius: 2.\n"
+    "- What's working: tests.\n- Attention areas: none yet.\n- Questions to settle before setting direction: owner.\n\n"
+)
+RADIUS = "".join(f"| {n} R | PARTIAL | C-001 |\n" for n in range(1, 6))
+BRIEF = (
+    MGMT + "## Architect Brief\n- A demo service [C-001].\n- Radius position:\n\n| Radius | Status | Basis |\n|---|---|---|\n"
+    + RADIUS + "\n- Attention areas: x.\n- Smallest next step outward: y.\n\n## 1. Repository Identity\n"
+)
 VERIFY = "\n## 17. What I would verify before repeating this in an architecture meeting\n- Check C-001.\n"
 LEDGER_HEADER = (
     "## 15. Claims Ledger\n\n"
@@ -121,17 +129,54 @@ class StructureAndAbsenceTest(CheckCitationsTest):
         return cc.check_report(p, self.repo).errors
 
     def test_missing_brief_is_error(self):
-        errs = self.write("## 1. Repository Identity\nx [C-001]\n" + LEDGER_HEADER + self.ROW + VERIFY)
+        errs = self.write(MGMT + "## 1. Repository Identity\nx [C-001]\n" + LEDGER_HEADER + self.ROW + VERIFY)
         self.assertTrue(any("missing '## Architect Brief'" in e for e in errs))
 
     def test_brief_below_section_one_is_error(self):
-        errs = self.write("## 1. Repository Identity\n## Architect Brief\n- x [C-001]\n" + LEDGER_HEADER + self.ROW + VERIFY)
+        errs = self.write(MGMT + "## 1. Repository Identity\n## Architect Brief\n- x [C-001]\n" + LEDGER_HEADER + self.ROW + VERIFY)
         self.assertTrue(any("above section 1" in e for e in errs))
 
     def test_long_brief_is_error(self):
-        long_brief = "## Architect Brief\n" + ("word " * 401) + "[C-001]\n## 1. Repository Identity\n"
+        long_brief = MGMT + "## Architect Brief\n" + ("word " * 401) + "[C-001]\n## 1. Repository Identity\n"
         errs = self.write(long_brief + LEDGER_HEADER + self.ROW + VERIFY)
         self.assertTrue(any("max 400" in e for e in errs))
+
+    def test_missing_management_summary_is_error(self):
+        errs = self.write(BRIEF.replace(MGMT, "") + LEDGER_HEADER + self.ROW + VERIFY)
+        self.assertTrue(any("missing '## Management Summary'" in e for e in errs))
+
+    def test_management_summary_below_brief_is_error(self):
+        body = BRIEF.replace(MGMT, "").replace("## 1. Repository Identity\n", MGMT + "## 1. Repository Identity\n")
+        errs = self.write(body + LEDGER_HEADER + self.ROW + VERIFY)
+        self.assertTrue(any("above the Architect Brief" in e for e in errs))
+
+    def test_management_summary_rules(self):
+        bad = MGMT.replace("a demo [C-001]", "see `src/server.py` [C-001] " + "word " * 150).replace("What's working: tests.\n", "")
+        errs = self.write(BRIEF.replace(MGMT, bad) + LEDGER_HEADER + self.ROW + VERIFY)
+        self.assertTrue(any("max 150" in e for e in errs))
+        self.assertTrue(any("plain language" in e for e in errs))
+        self.assertTrue(any("'working'" in e for e in errs))
+
+    def test_radius_table_rules(self):
+        body = BRIEF.replace("| 5 R | PARTIAL |", "| 5 R | GREAT |").replace("| 3 R | PARTIAL | C-001 |\n", "")
+        errs = self.write(body + LEDGER_HEADER + self.ROW + VERIFY)
+        self.assertTrue(any("missing Radius 3" in e for e in errs))
+        self.assertTrue(any("Radius 5 status 'GREAT'" in e for e in errs))
+
+    def test_indented_radius_table_is_parsed(self):
+        body = BRIEF.replace(RADIUS, "".join("  " + line + "\n" for line in RADIUS.splitlines()))
+        self.assertEqual(self.write(body + LEDGER_HEADER + self.ROW + VERIFY), [])
+
+    def test_radius_out_of_scope_is_valid(self):
+        body = BRIEF.replace("| 5 R | PARTIAL |", "| 5 R | OUT OF SCOPE |")
+        self.assertEqual(self.write(body + LEDGER_HEADER + self.ROW + VERIFY), [])
+
+    def test_loaded_language_is_error_outside_code(self):
+        r = self.report("The config is a sloppy mess [C-001]. `hack` in code is fine.", self.ROW)
+        errs = cc.check_report(r, self.repo).errors
+        self.assertTrue(any("'sloppy'" in e for e in errs))
+        self.assertTrue(any("'mess'" in e for e in errs))
+        self.assertFalse(any("'hack'" in e for e in errs))
 
     def test_missing_verify_section_is_error(self):
         errs = self.write(BRIEF + LEDGER_HEADER + self.ROW)

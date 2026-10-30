@@ -45,7 +45,13 @@ Target: $ARGUMENTS
 7. Check contradictions across docs/config/tests/code.
 8. Re-verify high-impact claims.
 9. Build claims ledger.
-10. Generate report from ledger: forensic sections 1–16, then the one-page **Architect Brief** placed above section 1, then section 17 **"What I would verify before repeating this in an architecture meeting."**
+10. Generate the report from the ledger at three altitudes (see the contract's "Report Altitudes"):
+    - write Level 3, Forensic Detail (sections 1–16), first;
+    - add section 17, **"What I would verify before repeating this in an architecture meeting."**;
+    - then write Level 2, the **Architect Brief**, with the five-radius Radius position table;
+    - then write Level 1, the **Management Summary** (≤150 words, plain language);
+    - place Level 1 first, then Level 2, then Level 3.
+    The report establishes where the system is today. It does not set direction; that is the owners' next intent.
 11. Self-audit for unsupported wording, especially absence claims (Evidence Policy Rule 16: "no … found in <scope>", Caveat starts `Search scope:`).
 12. Run `python3 tools/check_citations.py reports/<name>/REPORT.md --repo <target>`. Fix every ERROR and re-run until it passes. Report the final checker summary line to the human.
 
@@ -80,6 +86,7 @@ Do not use numeric confidence percentages unless a measured calibration system e
 - Do not infer production topology from IaC/deployment files alone.
 - Do not invent business meaning from names when the repo does not establish it.
 - Do not hide uncertainty.
+- Stay objective and neutral (Evidence Policy Rule 17): describe state, not merit; report strengths with the same rigor as attention areas; out of scope is not a defect.
 - Do not state absence as fact. "Not found in <scope>" is the strongest absence claim the repository can support.
 - Do not ask the user questions that the repository itself can answer.
 - Ask a human only when a decision materially depends on unavailable external context and cannot be safely labeled UNKNOWN.

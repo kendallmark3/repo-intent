@@ -2,18 +2,53 @@
 
 The final report must be useful to an architect and auditable by an engineer.
 
-## Architect Brief (first, above section 1)
-One page, at most 400 words: what an architect needs in two minutes. It sits above the forensic report and is written from the claims ledger like everything else. Every bullet cites claim IDs.
+## Report Altitudes
+Every report is written at three altitudes, in this order, so each reader can stop when they have enough. All three are written from the same claims ledger; the upper levels add no facts.
+
+| Level | Section | Reader | Length |
+|---|---|---|---|
+| 1 | Management Summary | Leadership, sponsors | ≤150 words, plain language |
+| 2 | Architect Brief | Architects, tech leads | ≤400 words |
+| 3 | Forensic Detail (sections 1–17) | Engineers, auditors | as needed |
+
+The report describes **where the system is today**: the Repository State. It does not decide where the system should go; that is the owners' intent. Options are offered as options.
+
+Tone: objective and neutral throughout (Evidence Policy Rule 17). Describe state, not merit. Strengths and attention areas meet the same evidence bar.
+
+## Level 1 — Management Summary
+At most 150 words. Plain language: no file paths, code, or code-formatted terms. Cite claim IDs in brackets.
+
+Required fields:
+- **Where it is today** — what the system is and how far it has progressed, in one or two sentences.
+- **Current credible radius** — the highest of the five radii (below) the evidence supports, in plain words.
+- **What's working** — up to 3 evidenced strengths.
+- **Attention areas** — up to 3, stated as conditions, not faults.
+- **Questions to settle before setting direction** — up to 3, for the owners.
+
+## Level 2 — Architect Brief
+At most 400 words. Every bullet cites claim IDs.
 
 Required fields:
 - **What it is** — one or two sentences.
 - **Shape** — entry points, major components, runtime/platform.
-- **Where the intelligence is** — what is AI/model-driven vs deterministic (or "not applicable").
-- **What's real vs aspirational** — implemented and evidenced vs documented, configured, or provisioned but unused.
-- **Top risks** — at most 3.
-- **Biggest unknowns** — at most 3.
+- **Where the intelligence is** — what is model-driven vs deterministic (or "not applicable").
+- **Implemented vs planned** — what is implemented and evidenced vs what is documented, configured, or provisioned without implementation found.
+- **Radius position** — this table, one row per radius:
 
-No new facts appear in the brief that are not in the ledger.
+  | Radius | Status | Basis |
+  |---|---|---|
+  | 1 Intent & Discovery | ... | claim IDs |
+  | 2 Prototype & Proof | ... | ... |
+  | 3 Engineering & Integration | ... | ... |
+  | 4 Delivery & Production | ... | ... |
+  | 5 Enterprise Operation & Governance | ... | ... |
+
+  Status vocabulary: `EVIDENCED` · `PARTIAL` · `NOT YET EVIDENCED` · `OUT OF SCOPE` (only when the repo's own intent or docs scope it out; cite that) · `UNKNOWN`. A radius beyond the repo's stated intent is OUT OF SCOPE, not a gap.
+- **Attention areas** — at most 3.
+- **Biggest unknowns** — at most 3.
+- **Smallest next step outward** — one option to move up one radius, with the proof it would need. Offered as an option for the owners, not a prescription.
+
+## Level 3 — Forensic Detail
 
 ## 1. Repository Identity
 - Repository/path
@@ -95,7 +130,7 @@ List domain concepts that are directly named or strongly corroborated.
 
 Mark speculative business interpretation as inference.
 
-## 13. Contradictions / Drift
+## 13. Alignment Gaps (Contradictions / Drift)
 Examples:
 - README says X, code implements Y;
 - config references removed module;
@@ -156,7 +191,7 @@ Final section, titled **"What I would verify before repeating this in an archite
 A short list (3–7 items) of the conclusions most likely to be repeated aloud, each with:
 - the statement as you would say it in the meeting;
 - claim IDs it rests on;
-- why it could be wrong or overstated (static-only analysis, absence claim, sampled coverage, documented-not-observed);
+- what could change it (static-only analysis, absence claim, sampled coverage, documented-not-observed);
 - the cheapest check that would confirm it (a command, a console, a person).
 
 Prioritize high-impact claims, absence claims, and anything resting on documentation alone.
@@ -168,4 +203,5 @@ The report must not:
 - cite files that do not contain the claimed evidence;
 - claim production reality from repository artifacts alone;
 - state an absence as fact ("X is never used") instead of a scoped finding ("no use of X found in <scope>");
-- present generic framework knowledge as repository-specific evidence.
+- present generic framework knowledge as repository-specific evidence;
+- use loaded or judgmental language, or attribute motive or carelessness to the authors (Evidence Policy Rule 17).

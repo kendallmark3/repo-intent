@@ -32,3 +32,25 @@ The forensic report, claims ledger, citation format, and checker.
 
 ## Evidence
 `tools/check_citations.py` enforces all three (brief present before section 1 and within 400 words; absence claims phrased as findings with a `Search scope:` caveat; final verify section present and citing claim IDs), and the clinical-evidence-coordinator report is regenerated to pass.
+
+---
+
+# Intent Delta — 2026-10-29 (report standard for every run)
+
+## Observation
+The report needs to serve management and engineering at once, and to read as an objective map of current state. It should not read as a critique. It is the first move of a Radius review: find out where we are before saying where to head.
+
+## Keep
+Forensic detail, the claims ledger, the citation format, the Architect Brief, absence-claim scoping, and the verify-before-repeating section.
+
+## Change
+1. Three report altitudes, in order: **Management Summary** (≤150 words, plain language) → **Architect Brief** (≤400 words) → **Forensic Detail**.
+2. The Architect Brief carries a **five-radius position** (Intent & Discovery → Enterprise Operation & Governance) with fixed status vocabulary. A radius beyond the repo's own intent is OUT OF SCOPE, not a gap.
+3. **Objective, neutral tone** (Evidence Policy Rule 17): state, not merit; strengths meet the same evidence bar as attention areas.
+4. The report establishes where the system is. Direction is the owners' next intent; the brief offers one "smallest next step outward" as an option.
+
+## New Boundary
+RepoIntent does not prescribe direction. It informs the next intent; it does not write it.
+
+## Evidence
+The checker enforces altitude order and limits, management plain language, required fields, the radius table and its statuses, and a loaded-language list. The clinical-evidence-coordinator report is regenerated and passes.
